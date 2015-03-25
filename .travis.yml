@@ -7,5 +7,3 @@ jdk:
 - oraclejdk7
 - openjdk7
 - oraclejdk8
-
-script: sbt ++$TRAVIS_SCALA_VERSION scripted
