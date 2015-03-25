@@ -1,5 +1,4 @@
-# sbt-scp-backup [![Build Status](https://travis-ci.org/Sensatus/sbt-scp-backup.svg?branch=master)]
-(https://travis-ci.org/Sensatus/sbt-scp-backup)
+# sbt-scp-backup [![Build Status](https://travis-ci.org/Sensatus/sbt-scp-backup.svg?branch=master)](https://travis-ci.org/Sensatus/sbt-scp-backup)
 
 This is a simple [SBT](http://www.scala-sbt.org) [AutoPlugin](http://www.scala-sbt.org/0.13/docs/Plugins.html)
 that uses [scala-ssh](https://github.com/sirthias/scala-ssh) and [Apache Commons Compress]
