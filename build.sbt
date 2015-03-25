@@ -74,5 +74,5 @@ lazy val root = (project in file("."))
           case _ => node
         }
       }).transform(node).head
-    },
+    }
   )
