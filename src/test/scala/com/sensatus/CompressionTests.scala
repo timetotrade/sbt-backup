@@ -12,12 +12,12 @@ import scala.util.{Failure, Success, Try}
 
 class CompressionTests extends WordSpec with Matchers {
 
-  "sbt-scp-backup compressor" must {
+  "sbt-backup compressor" must {
 
     "retain structural integrity of archives" in {
       val testDir = new File(getClass.getResource("/testdir").getPath)
       val outFile = System.getProperty("java.io.tmpdir") + "/test.tar.gz"
-      val tarFile = SbtScpBackup.createArchive(testDir, outFile).left.map(e ⇒ fail(e)).right.get
+      val tarFile = SbtBackup.createArchive(testDir, outFile).left.map(e ⇒ fail(e)).right.get
 
       // strip trailing "/"s
       val files = Unpack(tarFile.getAbsolutePath).map(_.getName)
@@ -36,7 +36,7 @@ class CompressionTests extends WordSpec with Matchers {
       // only test file sizes
       val testDir = new File(getClass.getResource("/testdir").getPath)
       val outFile = System.getProperty("java.io.tmpdir") + "/test.tar.gz"
-      val tarFile = SbtScpBackup.createArchive(testDir, outFile).left.map(e ⇒ fail(e)).right.get
+      val tarFile = SbtBackup.createArchive(testDir, outFile).left.map(e ⇒ fail(e)).right.get
 
       val files = Unpack(tarFile.getAbsolutePath).filter(!_.isDirectory)
         .map(a ⇒ a.getName → a.getSize)

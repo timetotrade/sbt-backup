@@ -23,7 +23,7 @@ lazy val root = (project in file("."))
   .settings(publishArtifactsAction := PgpKeys.publishSigned.value)
   .settings(
     sbtPlugin := true,
-    name := "sbt-scp-backup",
+    name := "sbt-backup",
     organization := "com.sensatus",
     organizationHomepage := Some(url("http://www.sensatus.com")),
     description := "SBT AutoPlugin to compress and scp a directory to a supplied server",
@@ -41,8 +41,8 @@ lazy val root = (project in file("."))
 //    Publishing details:
     scmInfo := Some(
       ScmInfo(
-        url("https://github.com/sensatus/sbt-scp-backup"),
-        "git@github.com:sensatus/sbt-scp-backup.git"
+        url("https://github.com/sensatus/sbt-backup"),
+        "git@github.com:sensatus/sbt-backup.git"
       )
     ),
     publishTo := {
@@ -53,7 +53,7 @@ lazy val root = (project in file("."))
         Some("releases"  at sonatype + "service/local/staging/deploy/maven2")
     },
     licenses := Seq("Apache-2.0" -> url("http://www.opensource.org/licenses/Apache-2.0")),
-    homepage := Some(url("http://github.com/sensatus/sbt-scp-backup")),
+    homepage := Some(url("http://github.com/sensatus/sbt-backup")),
     publishMavenStyle := true,
     developers := List(
       Developer("MaxWorgan","Max Worgan", "max.worgan@sensatus.com",url("http://www.sensatus.com"))

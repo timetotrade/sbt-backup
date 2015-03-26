@@ -35,34 +35,34 @@ import scala.util.control.Exception.nonFatalCatch
 /**
  * Class which compresses a selected directory and scp's it to a remote host
  */
-object SbtScpBackup extends AutoPlugin {
+object SbtBackup extends AutoPlugin {
 
   override def requires: Plugins = JvmPlugin
   override def trigger = noTrigger
 
   object autoImport {
-    lazy val scpBackup    = taskKey[Unit]("compress and scp a directory to configured host")
-    lazy val scpUsername  = settingKey[String]("username to scp with")
-    lazy val scpKeyFile   = settingKey[Option[File]]("keyfile to scp with")
-    lazy val scpHostname  = settingKey[Option[String]]("host to scp to")
-    lazy val scpPort      = settingKey[Int]("port to connect to")
-    lazy val scpSourceDir = taskKey[Option[File]]("Directory to compress and transfer")
-    lazy val scpRemoteDir = settingKey[File]("Remote directory to place tar.gz")
+    lazy val backup          = taskKey[Unit]("Compress and scp a directory to configured host")
+    lazy val backupUsername  = settingKey[String]("Username to scp with")
+    lazy val backupKeyFile   = settingKey[Option[File]]("Keyfile to scp with")
+    lazy val backupHostname  = settingKey[Option[String]]("Host to scp to")
+    lazy val backupPort      = settingKey[Int]("Port to connect to")
+    lazy val backupSourceDir = taskKey[Option[File]]("Directory to compress and transfer")
+    lazy val backupRemoteDir = settingKey[File]("Remote directory to place tar.gz")
   }
 
-  import com.sensatus.SbtScpBackup.autoImport._
+  import com.sensatus.SbtBackup.autoImport._
 
   /**
    * Provide default values
    * @return
    */
   override def globalSettings = Seq(
-    scpPort       := 22,
-    scpRemoteDir  := file("."),
-    scpUsername   := System.getProperty("user.name"),
-    scpKeyFile    := None,
-    scpHostname   := None,
-    scpSourceDir  := None
+    backupPort       := 22,
+    backupRemoteDir  := file("."),
+    backupUsername   := System.getProperty("user.name"),
+    backupKeyFile    := None,
+    backupHostname   := None,
+    backupSourceDir  := None
   )
 
   private def expandPath(path:String):String = {
@@ -79,33 +79,33 @@ object SbtScpBackup extends AutoPlugin {
    * Set the project settings
    */
   override lazy val projectSettings = Seq(
-    scpBackup := {
+    backup := {
 
       val log = streams.value.log
-      val sdir = scpSourceDir.value
-      val hname = scpHostname.value
+      val sdir = backupSourceDir.value
+      val hname = backupHostname.value
 
-      if(!sdir.isDefined)  log.error("scpSourceDir must be set to use scpBackup")
-      if(!hname.isDefined) log.error("scpHostname must be set to use scpBackup")
+      if(!sdir.isDefined)  log.error("backupSourceDir must be set to use backupBackup")
+      if(!hname.isDefined) log.error("backupHostname must be set to use backupBackup")
 
       for { sDir ← sdir; sHost ← hname }{
-        val keyFile = scpKeyFile.value.map(p ⇒ expandPath(p.getPath) :: Nil)
+        val keyFile = backupKeyFile.value.map(p ⇒ expandPath(p.getPath) :: Nil)
                       .getOrElse(getAllPossibleKeys)
 
         val compressedFile = sDir.getAbsolutePath + ".tar.gz"
         val hostConfig = HostConfig(
-          PublicKeyLogin(scpUsername.value, keyFile: _*), sHost, scpPort.value,
+          PublicKeyLogin(backupUsername.value, keyFile: _*), sHost, backupPort.value,
           hostKeyVerifier = HostKeyVerifiers.DontVerify
         )
 
         val result = for {
           archive ← createArchive(sDir, compressedFile).right
-          _       ← scpArchive(hostConfig, archive, scpRemoteDir.value.getPath).right
+          _       ← scpArchive(hostConfig, archive, backupRemoteDir.value.getPath).right
         } yield ()
 
         result.fold(
           s ⇒ log.error(s),
-          _ ⇒ log.info("scpBackup completed")
+          _ ⇒ log.info("backupBackup completed")
         )
 
         val tmpFile = file(compressedFile)
@@ -118,7 +118,7 @@ object SbtScpBackup extends AutoPlugin {
   )
 
   /**
-   * Scp the file to the remote host
+   * backup the file to the remote host
    * @param hostConfig the [[HostConfig]] specifying the remote connection
    * @param local the local file to transfer
    * @param remote the remote directory
@@ -172,8 +172,7 @@ object SbtScpBackup extends AutoPlugin {
           t.closeArchiveEntry()
           val children = f.listFiles().map(_ → (d + File.separator + f.getName)).toList
           addToArchive(t, children ++ fs)
-        }
-        else {
+        } else {
           t.closeArchiveEntry()
           addToArchive(t, fs)
         }

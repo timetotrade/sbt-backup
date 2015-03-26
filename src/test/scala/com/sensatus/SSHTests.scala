@@ -20,7 +20,7 @@ class SSHTests extends WordSpec with Matchers with BeforeAndAfterAll {
   }
 
 
-  "sbt-scp-backup scp client" must {
+  "sbt-backup scp client" must {
     "accept files over scp" in {
       val keyfile = new File(getClass.getResource("/keys/hostkey.pem").toURI)
       val testFile = new File(getClass.getResource("/testdir.tar.gz").toURI)
@@ -32,7 +32,7 @@ class SSHTests extends WordSpec with Matchers with BeforeAndAfterAll {
         hostKeyVerifier = HostKeyVerifiers.DontVerify
       )
 
-      val result = SbtScpBackup.scpArchive(h, testFile, "/tmp/")
+      val result = SbtBackup.scpArchive(h, testFile, "/tmp/")
       result.left.map(m ⇒ fail(m))
       result.isRight should be(true)
       val f = new File("/tmp/testdir.tar.gz")
