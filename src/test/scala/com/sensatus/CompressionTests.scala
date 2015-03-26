@@ -48,12 +48,8 @@ class CompressionTests extends WordSpec with Matchers {
         (s._1.indexOf("/testdir"))) → s._2)
 
       files should equal (fsFiles)
-
     }
-
   }
-
-
 }
 
 

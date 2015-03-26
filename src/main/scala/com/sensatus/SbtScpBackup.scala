@@ -35,15 +35,15 @@ import scala.util.control.Exception.nonFatalCatch
 object SbtScpBackup extends AutoPlugin {
 
   override def requires: Plugins = JvmPlugin
-  override def trigger = noTrigger
+  override def trigger = allRequirements
 
   object autoImport {
     lazy val scpBackup    = taskKey[Unit]("compress and scp a directory to configured host")
     lazy val scpUsername  = settingKey[String]("username to scp with")
-    lazy val scpKeyFile   = settingKey[File]("keyfile to scp with")
-    lazy val scpHostname  = settingKey[String]("host to scp to")
+    lazy val scpKeyFile   = settingKey[Option[File]]("keyfile to scp with")
+    lazy val scpHostname  = settingKey[Option[String]]("host to scp to")
     lazy val scpPort      = settingKey[Int]("port to connect to")
-    lazy val scpSourceDir = taskKey[File]("Directory to compress and transfer")
+    lazy val scpSourceDir = taskKey[Option[File]]("Directory to compress and transfer")
     lazy val scpRemoteDir = settingKey[File]("Remote directory to place tar.gz")
   }
 
@@ -56,8 +56,10 @@ object SbtScpBackup extends AutoPlugin {
   override def globalSettings = Seq(
     scpPort       := 22,
     scpRemoteDir  := file("."),
-    scpKeyFile    := file("~/.ssh/id_rsa"),
-    scpUsername   := System.getProperty("user.name")
+    scpUsername   := System.getProperty("user.name"),
+    scpKeyFile    := None,
+    scpHostname   := None,
+    scpSourceDir  := None
   )
 
   /**
@@ -65,23 +67,40 @@ object SbtScpBackup extends AutoPlugin {
    */
   override lazy val projectSettings = Seq(
     scpBackup := {
-      val keyFile = scpKeyFile.value.getPath.replaceFirst("^~",System.getProperty("user.home"))
-      val compressedFile = scpSourceDir.value.getAbsolutePath + ".tar.gz"
-      val hostConfig = HostConfig(
-        PublicKeyLogin(scpUsername.value,keyFile),scpHostname.value,scpPort.value
-      )
 
-      val result = for {
-        archive  ← createArchive(scpSourceDir.value,compressedFile).right
-        _        ← scpArchive(hostConfig, archive,scpRemoteDir.value.getPath ).right
-      } yield ()
+      val log = streams.value.log
+      val sdir = scpSourceDir.value
+      val hname = scpHostname.value
 
-      result.left.map(s ⇒ streams.value.log.error(s))
+      if(!sdir.isDefined)  log.error("scpSourceDir must be set to use scpBackup")
+      if(!hname.isDefined) log.error("scpHostname must be set to use scpBackup")
 
-      val tmpFile = file(compressedFile)
-      if(tmpFile.exists()){
-        if(!tmpFile.delete())
-          streams.value.log.error(s"Could not delete ${tmpFile.getAbsolutePath}")
+      for { sDir ← sdir; sHost ← hname }{
+        val keyFile = scpKeyFile.value.map(_.getPath :: Nil)
+          .getOrElse(PublicKeyLogin.DefaultKeyLocations)
+          .map(_.replaceFirst("^~", System.getProperty("user" + ".home")))
+
+        val compressedFile = sDir.getAbsolutePath + ".tar.gz"
+        val hostConfig = HostConfig(
+          PublicKeyLogin(scpUsername.value, keyFile: _*), sHost, scpPort.value,
+          hostKeyVerifier = HostKeyVerifiers.DontVerify
+        )
+
+        val result = for {
+          archive ← createArchive(sDir, compressedFile).right
+          _       ← scpArchive(hostConfig, archive, scpRemoteDir.value.getPath).right
+        } yield ()
+
+        result.fold(
+          s ⇒ log.error(s),
+          _ ⇒ log.info("scpBackup completed")
+        )
+
+        val tmpFile = file(compressedFile)
+        if (tmpFile.exists()) {
+          if (!tmpFile.delete())
+            log.error(s"Could not delete ${tmpFile.getAbsolutePath}")
+        }
       }
     }
   )
@@ -93,8 +112,8 @@ object SbtScpBackup extends AutoPlugin {
    * @param remote the remote directory
    * @return [[Either]] with a [[String]] error, or Unit
    */
-  def scpArchive(hostConfig:HostConfig,local:File,remote:String): Either[String,Unit] = {
-    SSH("localhost", hostConfig)(_.upload(local.getAbsolutePath, remote))
+  def scpArchive(hostConfig:HostConfig,local:File,remote:String): Validated[Unit] = {
+    SSH(hostConfig.hostName, hostConfig)(_.upload(local.getAbsolutePath, remote))
   }
 
   /**
@@ -127,7 +146,7 @@ object SbtScpBackup extends AutoPlugin {
    * @return The [[TarArchiveOutputStream]] with all the files added
    */
   @tailrec
-  def addToArchive(t: TarArchiveOutputStream, files: List[(File,String)]):
+  private def addToArchive(t: TarArchiveOutputStream, files: List[(File,String)]):
   TarArchiveOutputStream = {
     files match {
       case Nil ⇒ t
@@ -150,7 +169,4 @@ object SbtScpBackup extends AutoPlugin {
         }
     }
   }
-
-
-
 }
