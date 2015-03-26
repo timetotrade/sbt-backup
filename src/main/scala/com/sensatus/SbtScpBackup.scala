@@ -66,7 +66,7 @@ object SbtScpBackup extends AutoPlugin {
   override lazy val projectSettings = Seq(
     scpBackup := {
       val keyFile = scpKeyFile.value.getPath.replaceFirst("^~",System.getProperty("user.home"))
-      val compressedFile = file(scpSourceDir.value.getAbsolutePath + ".tar.gz")
+      val compressedFile = scpSourceDir.value.getAbsolutePath + ".tar.gz"
       val hostConfig = HostConfig(
         PublicKeyLogin(scpUsername.value,keyFile),scpHostname.value,scpPort.value
       )
@@ -78,9 +78,10 @@ object SbtScpBackup extends AutoPlugin {
 
       result.left.map(s ⇒ streams.value.log.error(s))
 
-      if(compressedFile.exists()){
-        if(!compressedFile.delete())
-          streams.value.log.error(s"Could not delete ${compressedFile.getAbsolutePath}")
+      val tmpFile = file(compressedFile)
+      if(tmpFile.exists()){
+        if(!tmpFile.delete())
+          streams.value.log.error(s"Could not delete ${tmpFile.getAbsolutePath}")
       }
     }
   )
@@ -102,8 +103,7 @@ object SbtScpBackup extends AutoPlugin {
    * @param output the output file
    * @return [[Either]] the [[File]] or a [[String]] error
    */
-  def createArchive(input:File,output:File) : Either[String,File] = {
-    println("inputDir: " + input)
+  def createArchive(input:File,output:String) : Either[String,File] = {
     (nonFatalCatch either {
       val fos = new FileOutputStream(output)
       val tar = new TarArchiveOutputStream(
@@ -116,7 +116,7 @@ object SbtScpBackup extends AutoPlugin {
       addToArchive(tar, List(input → "."))
       tar.close()
       fos.close()
-      output
+      file(output)
     }).left.map(_.getMessage)
   }
 
