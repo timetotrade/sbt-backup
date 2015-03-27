@@ -31,8 +31,7 @@ scpUsername  | String        | username to connect as                    | Syste
 scpSourceDir | Option[File]  | which directory to compress and transfer  | None
 scpRemoteDir | File          | remote directory in which to put the file | file(".")
 
-if ```scpKeyFile``` is not provided, the default locations of ~/.ssh/id_rsa and ~/.ssh/id_dsa 
-will be tried.
+if ```scpKeyFile``` is not provided, it will attempt to use any keys it can find in ~/.ssh/
 
 ```scpSourceDir``` is a taskKey rather than a settings key so that the 'input' to this task can 
 depend on the output of some other task. For example:

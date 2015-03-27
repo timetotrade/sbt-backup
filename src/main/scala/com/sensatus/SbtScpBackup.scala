@@ -22,10 +22,13 @@ import com.decodified.scalassh._
 import org.apache.commons.compress.archivers.tar.{TarArchiveEntry, TarArchiveOutputStream}
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream
 import org.apache.commons.compress.utils.IOUtils
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.{TrueFileFilter, RegexFileFilter, IOFileFilter}
 import sbt.Keys._
 import sbt.{File, _}
 import sbt.plugins.JvmPlugin
 
+import scala.collection.JavaConversions._
 import scala.annotation.tailrec
 import scala.util.control.Exception.nonFatalCatch
 
@@ -35,7 +38,7 @@ import scala.util.control.Exception.nonFatalCatch
 object SbtScpBackup extends AutoPlugin {
 
   override def requires: Plugins = JvmPlugin
-  override def trigger = allRequirements
+  override def trigger = noTrigger
 
   object autoImport {
     lazy val scpBackup    = taskKey[Unit]("compress and scp a directory to configured host")
@@ -62,6 +65,16 @@ object SbtScpBackup extends AutoPlugin {
     scpSourceDir  := None
   )
 
+  private def expandPath(path:String):String = {
+    path.replaceFirst("^~", System.getProperty("user.home"))
+  }
+
+  private def getAllPossibleKeys : List[String] = {
+    FileUtils.listFiles(
+      file(System.getProperty("user.home") + "/.ssh/"),
+      new RegexFileFilter("id_.*[^\\.pub]"),
+      TrueFileFilter.TRUE).toList.map(_.getPath)
+  }
   /**
    * Set the project settings
    */
@@ -76,9 +89,8 @@ object SbtScpBackup extends AutoPlugin {
       if(!hname.isDefined) log.error("scpHostname must be set to use scpBackup")
 
       for { sDir ← sdir; sHost ← hname }{
-        val keyFile = scpKeyFile.value.map(_.getPath :: Nil)
-          .getOrElse(PublicKeyLogin.DefaultKeyLocations)
-          .map(_.replaceFirst("^~", System.getProperty("user" + ".home")))
+        val keyFile = scpKeyFile.value.map(p ⇒ expandPath(p.getPath) :: Nil)
+                      .getOrElse(getAllPossibleKeys)
 
         val compressedFile = sDir.getAbsolutePath + ".tar.gz"
         val hostConfig = HostConfig(
@@ -132,9 +144,8 @@ object SbtScpBackup extends AutoPlugin {
       )
       tar.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_STAR)
       tar.setLongFileMode(TarArchiveOutputStream.LONGFILE_GNU)
-      addToArchive(tar, List(input → "."))
-      tar.close()
-      fos.close()
+      try{ addToArchive(tar, List(input → ".")) }
+      finally{ tar.close(); fos.close() }
       file(output)
     }).left.map(_.getMessage)
   }
@@ -154,9 +165,8 @@ object SbtScpBackup extends AutoPlugin {
         t.putArchiveEntry(new TarArchiveEntry(f, d + File.separator + f.getName))
         if (f.isFile) {
           val bis = new BufferedInputStream(new FileInputStream(f))
-          IOUtils.copy(bis, t)
-          t.closeArchiveEntry()
-          bis.close()
+          try { IOUtils.copy(bis, t) }
+          finally { t.closeArchiveEntry(); bis.close() }
           addToArchive(t, fs)
         } else if (f.isDirectory) {
           t.closeArchiveEntry()

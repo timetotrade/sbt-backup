@@ -34,8 +34,8 @@ lazy val root = (project in file("."))
       "com.decodified" %% "scala-ssh" % "0.7.0",
       "org.bouncycastle" % "bcprov-jdk16" % "1.46",
       "com.jcraft" % "jzlib" % "1.1.3",
+      "commons-io" % "commons-io" % "2.4",
       "org.scalatest" %% "scalatest" % "2.2.4" % "test",
-      "commons-io" % "commons-io" % "2.4" % "test",
       "org.apache.sshd" % "sshd-core" % "0.14.0" % "test"
     ),
 //    Publishing details:
