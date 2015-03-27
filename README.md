@@ -20,6 +20,12 @@ Add to your project/plugins.sbt
 ```scala
 addSbtPlugin("com.sensatus" % "sbt-backup" % "1.0.0")
 ```
+                  
+And enable in your project/Build.scala
+
+```scala
+.enablePlugins(SbtBackup)
+```
 
 The following keys are used for configuration:
     
