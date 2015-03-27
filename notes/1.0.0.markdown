@@ -1,1 +1,11 @@
-Initial release
+This is the initial release.
+
+sbt-backup is a simple SBT plugin that can compress and scp a provided directory to some remote host.
+
+The plugin gives you the task ```backup``` which can be inserted into your build process as 
+needed
+
+It could be used to backup test results, documentation or any other supplementary material 
+generated during packaging.
+
+You can find more in the [readme](https://github.com/Sensatus/sbt-backup#readme).
